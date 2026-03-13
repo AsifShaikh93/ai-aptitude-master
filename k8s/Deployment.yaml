@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-aptitude-master
+  namespace: ai-agent-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-master
+  template:
+    metadata:
+      labels:
+        app: ai-master
+    spec:
+      containers:
+      - name: ai-master-container
+        image: asif1993/ai-aptitude-master:v10
+        env:
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: all-secrets-here
+              key: GROQ_API_KEY
+        - name: HF_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: all-secrets-here  
+              key: HF_TOKEN 
+        - name: TAVILY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: all-secrets-here  
+              key: TAVILY_API_KEY 
+        - name: LANGCHAIN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: all-secrets-here 
+              key: LANGCHAIN_API_KEY               
+        ports:
+        - containerPort: 8000

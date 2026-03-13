@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamlit-ai-master-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit-ai-master
+  template:
+    metadata:
+      labels:
+        app: streamlit-ai-master
+    spec:
+      containers:
+      - name: streamlit-ai-master-container
+        image: asif1993/streamlit-ai-master:v1
+        ports:
+        - containerPort: 8502
