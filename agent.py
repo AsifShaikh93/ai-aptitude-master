@@ -3,7 +3,7 @@ from tools.scipy_tool import scipy_tools
 from tools.sympy_tool import sympy_tools
 from langchain_groq import ChatGroq
 from langchain_classic.agents import create_structured_chat_agent, AgentExecutor
-from langchain import hub
+from langchain_classic import hub
 
 # 1. Setup Tools
 tools = []
