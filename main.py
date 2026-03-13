@@ -1,20 +1,46 @@
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from agent import aptitude_agent
+import json
 
 app = FastAPI(title="AI Aptitude Master")
-
 
 class QueryRequest(BaseModel):
     question: str
 
+async def stream_generator(question: str):
+    """
+    Generator that yields tokens from the agent as they are produced.
+    Using astream_events is the most reliable way to capture final output
+    tokens while skipping internal agent thoughts.
+    """
+    async for event in aptitude_agent.astream_events(
+        {"input": question}, 
+        version="v2"
+    ):
+        kind = event["event"]
+
+        # Capture tokens from the chat model
+        if kind == "on_chat_model_stream":
+            content = event["data"]["chunk"].content
+            if content:
+                # Yield the raw text content
+                yield content
 
 @app.post("/solve")
-def solve(request: QueryRequest):
+async def solve(request: QueryRequest):
+    # StreamingResponse keeps the connection open while the generator yields data
+    return StreamingResponse(
+        stream_generator(request.question),
+        media_type="text/plain",
+        headers={
+            "X-Accel-Buffering": "no",  # Prevents Nginx/Proxies from buffering
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
-    result = aptitude_agent.run(request.question)
-
-    return {
-        "question": request.question,
-        "answer": result
-    }
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

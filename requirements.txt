@@ -15,5 +15,6 @@ langchain-groq
 pydantic
 fastapi
 uvicorn
+langchainhub
 
 

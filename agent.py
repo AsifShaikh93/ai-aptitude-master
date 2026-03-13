@@ -1,23 +1,40 @@
+import os
 from tools.scipy_tool import scipy_tools
 from tools.sympy_tool import sympy_tools
-from langchain_classic.agents import initialize_agent, AgentType
 from langchain_groq import ChatGroq
-import os
+from langchain.agents import create_structured_chat_agent, AgentExecutor
+from langchain import hub
 
+# 1. Setup Tools
 tools = []
 tools.extend(scipy_tools)
 tools.extend(sympy_tools)
 
-os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
-
+# 2. Initialize LLM with streaming enabled
+# The 'streaming=True' is critical for your FastAPI StreamingResponse to work!
 llm = ChatGroq(
     model="moonshotai/kimi-k2-instruct-0905",
-    temperature=0
+    temperature=0,
+    streaming=True 
 )
 
-aptitude_agent = initialize_agent(
-    tools=tools,
+# 3. Pull the Prompt 
+# This is the standard prompt for structured chat agents (supports multi-input tools)
+prompt = hub.pull("hwchase17/structured-chat-agent")
+
+# 4. Create the Agent
+# We use create_structured_chat_agent instead of the deprecated initialize_agent
+agent = create_structured_chat_agent(
     llm=llm,
-    agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True
+    tools=tools,
+    prompt=prompt
+)
+
+# 5. Create the Executor
+# handle_parsing_errors=True is a lifesaver for math agents
+aptitude_agent = AgentExecutor(
+    agent=agent,
+    tools=tools,
+    verbose=True,
+    handle_parsing_errors=True
 )
