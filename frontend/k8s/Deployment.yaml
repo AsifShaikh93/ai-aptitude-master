@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: streamlit-ai-master-container
-        image: asif1993/streamlit-ai-master:v3
+        image: asif1993/streamlit-ai-master:v4
         ports:
         - containerPort: 8502
