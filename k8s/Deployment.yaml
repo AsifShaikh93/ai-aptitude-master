@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ai-master-container
-        image: asif1993/ai-aptitude-master:v13
+        image: asif1993/ai-aptitude-master:v14
         env:
         - name: GROQ_API_KEY
           valueFrom:

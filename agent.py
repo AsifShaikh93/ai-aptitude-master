@@ -13,7 +13,7 @@ tools.extend(sympy_tools)
 # 2. Initialize LLM with streaming enabled
 # The 'streaming=True' is critical for your FastAPI StreamingResponse to work!
 llm = ChatGroq(
-    model="moonshotai/kimi-k2-instruct-0905",
+    model="qwen/qwen3-32b",
     temperature=0,
     streaming=True 
 )
