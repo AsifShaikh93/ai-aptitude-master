@@ -1,5 +1,4 @@
 import streamlit as st
-from agent import agent
 import requests
 
 API_URL='https://ai-aptitude-master.c-321a6c0.stage.kyma.ondemand.com/solve'
