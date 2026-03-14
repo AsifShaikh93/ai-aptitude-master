@@ -15,7 +15,6 @@ if st.button('Answer'):
         full_response = ""
         
         try:
-            onse
             with requests.post(API_URL, json={'question': question}, stream=True) as response:
                 if response.status_code == 200:
                     
