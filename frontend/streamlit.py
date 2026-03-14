@@ -14,8 +14,8 @@ if st.button('Answer'):
     if question:
         with st.spinner('thinking ...'):
             
-            response=requests.post({
+            response=requests.post(
                 API_URL,
-                'question': question 
+                {'question': question 
             })
    
