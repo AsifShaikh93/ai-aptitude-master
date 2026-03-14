@@ -1,4 +1,4 @@
-from scipy.optimize import minimize
+from scipy.optimize import minimize, fsolve
 from langchain.tools import tool
 from scipy.integrate import quad
 from scipy.stats import binom, poisson, chi2, t, norm, gaussian_kde, zscore
@@ -11,21 +11,19 @@ from scipy.fft import fft
 import numpy as np
 import sympy as sp
 
-
 @tool
 def minimize_function(function: str, guess: float):
     """
     Finds minimum of a mathematical function.
-
-    Example:
-    function="x**2 + 3*x + 2"
-    guess=0
+    Automatically detects the variable used in the string.
     """
-
-    x = sp.symbols("x")
     expr = sp.sympify(function)
-    f = sp.lambdify(x, expr, "numpy")
-
+    
+    vars = list(expr.free_symbols)
+    if not vars:
+        return "Error: No variable found in function."
+    
+    f = sp.lambdify(vars[0], expr, "numpy")
     result = minimize(f, guess)
 
     return {
@@ -33,241 +31,164 @@ def minimize_function(function: str, guess: float):
         "minimum_value": float(result.fun)
     }
 
-
 @tool
 def solve_nonlinear_equation(equation: str, guess: float):
     """
-    Solves nonlinear equation numerically.
-
-    Example:
-    equation="x**3 - x - 2"
-    guess=1
+    Solves nonlinear equation numerically (f(x) = 0).
     """
-
-    from scipy.optimize import fsolve
-
-    x = sp.symbols("x")
     expr = sp.sympify(equation)
+    vars = list(expr.free_symbols)
+    if not vars:
+        return "Error: No variable found in equation."
 
-    f = sp.lambdify(x, expr, "numpy")
-
+    f = sp.lambdify(vars[0], expr, "numpy")
     root = fsolve(f, guess)
 
     return float(root[0])
 
-
 @tool
 def solve_equation_system(equations: list):
     """
-    Solves system of algebraic equations.
-
-    Example:
-    ["a-6*b+6*c=4", "6*a+3*b-3*c=50"]
+    Solves system of algebraic equations. 
+    Dynamically detects all variables (e.g., x, y, z or a, b, c).
+    
+    Example: ["x + y = 20", "90*x + 150*y = 2100"]
     """
-
-    a, b, c = sp.symbols("a b c")
-
     sympy_eqs = []
+    all_symbols = set()
 
     for eq in equations:
+        if "=" not in eq:
+            continue
         left, right = eq.split("=")
-        sympy_eqs.append(sp.sympify(left) - sp.sympify(right))
+        lhs = sp.sympify(left.strip())
+        rhs = sp.sympify(right.strip())
+        expr = lhs - rhs
+        sympy_eqs.append(expr)
+        all_symbols.update(expr.free_symbols)
 
-    solution = sp.solve(sympy_eqs, (a, b, c))
+    
+    symbol_list = sorted(list(all_symbols), key=lambda s: s.name)
+    solution = sp.solve(sympy_eqs, symbol_list)
 
-    return solution
-
+   
+    if isinstance(solution, dict):
+        return {str(k): float(v) if v.is_number else str(v) for k, v in solution.items()}
+    return str(solution)
 
 @tool
 def integrate_function(function: str, a: float, b: float):
     """
     Computes definite integral of a function.
-
-    Example:
-    function="x**2"
-    a=0
-    b=2
     """
-
-    x = sp.symbols("x")
     expr = sp.sympify(function)
-    f = sp.lambdify(x, expr, "numpy")
-
+    vars = list(expr.free_symbols)
+    if not vars:
+        return "Error: No variable found."
+    
+    f = sp.lambdify(vars[0], expr, "numpy")
     result, _ = quad(f, a, b)
-
     return float(result)
-
 
 @tool
 def normal_distribution_cdf(x: float):
-    """
-    Normal distribution cumulative probability.
-    """
+    """Normal distribution cumulative probability."""
     return float(norm.cdf(x))
-
 
 @tool
 def binomial_probability(n: int, p: float, k: int):
-    """
-    Probability of k successes in n trials.
-    """
+    """Probability of k successes in n trials."""
     return float(binom.pmf(k, n, p))
-
 
 @tool
 def poisson_probability(mu: float, k: int):
-    """
-    Poisson probability.
-    """
+    """Poisson probability."""
     return float(poisson.pmf(k, mu))
-
 
 @tool
 def t_distribution_probability(x: float, df: int):
-    """
-    T distribution cumulative probability.
-    """
+    """T distribution cumulative probability."""
     return float(t.cdf(x, df))
-
 
 @tool
 def chi_square_probability(x: float, df: int):
-    """
-    Chi-square cumulative probability.
-    """
+    """Chi-square cumulative probability."""
     return float(chi2.cdf(x, df))
-
 
 @tool
 def matrix_inverse(A: list):
-    """
-    Computes matrix inverse.
-
-    Example:
-    [[1,2],[3,4]]
-    """
+    """Computes matrix inverse."""
     return inv(np.array(A)).tolist()
-
 
 @tool
 def eigen_values(A: list):
-    """
-    Computes eigenvalues and eigenvectors.
-    """
+    """Computes eigenvalues and eigenvectors."""
     values, vectors = eig(np.array(A))
-
     return {
         "eigenvalues": values.tolist(),
         "eigenvectors": vectors.tolist()
     }
 
-
 @tool
 def solve_linear_system(A: list, b: list):
-    """
-    Solves Ax=b linear system.
-    """
-
+    """Solves Ax=b linear system."""
     solution = solve(np.array(A), np.array(b))
-
     return solution.tolist()
-
 
 @tool
 def interpolate_data(x: list, y: list, value: float):
-    """
-    Estimates missing data points.
-    """
-
+    """Estimates missing data points."""
     f = interp1d(x, y)
-
     return float(f(value))
-
 
 @tool
 def euclidean_distance(p1: list, p2: list):
-    """
-    Euclidean distance between two points.
-    """
-
+    """Euclidean distance between two points."""
     return float(euclidean(p1, p2))
-
 
 @tool
 def pairwise_distance(points: list):
-    """
-    Pairwise distance between multiple points.
-    """
-
+    """Pairwise distance between multiple points."""
     return pdist(points).tolist()
-
 
 @tool
 def detect_peaks(data: list):
-    """
-    Detects peaks in signal data.
-    """
-
+    """Detects peaks in signal data."""
     peaks, _ = find_peaks(data)
-
     return peaks.tolist()
-
 
 @tool
 def smooth_signal(data: list):
-    """
-    Smooth noisy signal.
-    """
-
+    """Smooth noisy signal using Savitzky-Golay filter."""
     return savgol_filter(data, 5, 2).tolist()
-
 
 @tool
 def fourier_transform(data: list):
-    """
-    Fourier transform of signal.
-    """
-
-    return fft(data).tolist()
-
+    """Fourier transform of signal."""
+    
+    res = fft(data)
+    return [[float(val.real), float(val.imag)] for val in res]
 
 @tool
 def statistical_mean(data: list):
-    """
-    Average of dataset.
-    """
-
+    """Average of dataset."""
     return float(np.mean(data))
-
 
 @tool
 def standard_deviation(data: list):
-    """
-    Standard deviation of dataset.
-    """
-
+    """Standard deviation of dataset."""
     return float(np.std(data))
-
 
 @tool
 def compute_zscore(data: list):
-    """
-    Standardized values of dataset.
-    """
-
+    """Standardized values of dataset."""
     return zscore(data).tolist()
-
 
 @tool
 def density_estimation(data: list, point: float):
-    """
-    Kernel density estimation.
-    """
-
+    """Kernel density estimation."""
     kde = gaussian_kde(data)
-
     return float(kde(point))
-
 
 scipy_tools = [
     minimize_function,
