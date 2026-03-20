@@ -21,21 +21,18 @@ async def stream_generator(question: str):
     ):
         kind = event["event"]
 
-        # Capture tokens from the chat model
         if kind == "on_chat_model_stream":
             content = event["data"]["chunk"].content
             if content:
-                # Yield the raw text content
                 yield content
 
 @app.post("/solve")
 async def solve(request: QueryRequest):
-    # StreamingResponse keeps the connection open while the generator yields data
     return StreamingResponse(
         stream_generator(request.question),
         media_type="text/plain",
         headers={
-            "X-Accel-Buffering": "no",  # Prevents Nginx/Proxies from buffering
+            "X-Accel-Buffering": "no", 
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
         }
